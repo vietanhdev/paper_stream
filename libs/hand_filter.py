@@ -2,9 +2,8 @@ import cv2
 import numpy as np 
 
 
-class skinColorFilter(object):
+class SkinColorFilter(object):
     
-    # class constructor
     def __init__(self):
         self.lower_HSV_values = np.array([0, 40, 0], dtype="uint8")
         self.upper_HSV_values = np.array([25, 255, 255], dtype="uint8")

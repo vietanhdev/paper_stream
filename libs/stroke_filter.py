@@ -5,3 +5,5 @@ def filter_small_noise(img):
     """
     Filter small noise
     """
+    
+    pass
