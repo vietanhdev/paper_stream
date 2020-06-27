@@ -13,7 +13,7 @@ from libs.webcam import pyfakewebcam
 from libs.utils.common import *
 from libs.config import *
 
-OUTPUT_SIMULATED_CAMERA = True
+OUTPUT_SIMULATED_CAMERA = False
 
 paper_processor = PaperProcessor(REFERENCE_ARUCO_IMAGE_PATH, smooth=False, debug=True, output_video_path=None)
 hand_remover = HandRemover()
