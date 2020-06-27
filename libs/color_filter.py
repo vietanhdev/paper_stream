@@ -2,7 +2,7 @@ import cv2
 import numpy as np 
 
 
-class skinColorFilter(object):
+class SkinColorFilter(object):
     
     # class constructor
     def __init__(self, img):

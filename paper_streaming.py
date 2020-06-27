@@ -8,15 +8,15 @@ import time
 import urllib 
 from libs.paper_processor import PaperProcessor
 from libs.pyfakewebcam import pyfakewebcam
-from libs.filter_color import skinColorFilter
+from libs.color_filter import SkinColorFilter
 from libs.dominant_color import get_dominant_color_image
-
+from libs.utils import *
 
 paper_processor = PaperProcessor(smooth=False, debug=True, output_video_path=None)
-output_width, output_height = paper_processor.get_output_size()
-# camera = pyfakewebcam.FakeWebcam('/dev/video3', output_width, output_height)
 
-# load video file
+output_width, output_height = paper_processor.get_output_size()
+camera = pyfakewebcam.FakeWebcam(get_camera_path("PaperStreamCam"), output_width, output_height)
+
 cap = cv2.VideoCapture("http://192.168.43.1:8080/video")
 
 dominant_color = None
@@ -28,7 +28,7 @@ while(True):
         ret, warped_image = paper_processor.transform_image(frame, enhance_image=False)
 
         if dominant_color is None:
-            color_filter = skinColorFilter(warped_image)
+            color_filter = SkinColorFilter(warped_image)
             dominant_color_image, dominant_color = get_dominant_color_image(warped_image)
 
         background = color_filter.run(warped_image)
@@ -36,9 +36,10 @@ while(True):
         gray_dominant_color_image = cv2.cvtColor(dominant_color_image, cv2.COLOR_BGR2GRAY)
         gray_background = cv2.cvtColor(background, cv2.COLOR_BGR2GRAY)
         diff = np.abs(gray_dominant_color_image.astype(np.int8) - gray_background.astype(np.int8))
-        m = diff<30
+        m = diff < 50
         # background[m] = 255
         warped_image = background
+        
         
         # if ret:
         #     warped_image_rgb = cv2.cvtColor(warped_image, cv2.COLOR_BGR2RGB)
