@@ -1,13 +1,10 @@
 import cv2
 import numpy as np
-
-from .image_processing import *
-from .utils import *
-from .config import *
+from ..utils.common import *
 
 class PaperProcessor:
 
-    def __init__(self, smooth=False, debug=False, output_video_path=None):
+    def __init__(self, ref_image_path, smooth=False, debug=False, output_video_path=None):
 
         self.smooth = smooth
         self.debug = debug
@@ -39,7 +36,7 @@ class PaperProcessor:
         self.parameters = parameters
 
         # load reference image
-        self.ref_image = cv2.cvtColor(cv2.imread(REFERENCE_ARUCO_IMAGE_PATH), cv2.COLOR_BGR2GRAY)
+        self.ref_image = cv2.imread(ref_image_path, cv2.IMREAD_GRAYSCALE)
 
         # detect markers in reference image
         self.ref_corners, self.ref_ids, self.ref_rejected = cv2.aruco.detectMarkers(self.ref_image, aruco_dict, parameters = parameters)
@@ -58,7 +55,42 @@ class PaperProcessor:
     def get_output_size(self):
         return self.ref_image.shape[1], self.ref_image.shape[0]
 
-    def update_transform_matrices(self, gray):
+    def transform_image(self, image, enhance_image=True):
+        """Transform image"""
+
+        # convert frame to gray scale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # find new transform matrices
+        is_aruco_detected = self._update_transform_matrices(gray)
+
+        # draw detected markers in frame with their ids
+        if self.debug and is_aruco_detected:
+            draw_frame = image.copy()
+            cv2.aruco.drawDetectedMarkers(draw_frame, self.res_corners, self.res_ids)
+            cv2.namedWindow("Debug aruco", cv2.WINDOW_NORMAL)
+            cv2.imshow("Debug aruco",  draw_frame)
+            cv2.waitKey(1)
+        
+        # convert image using new transform matrices
+        if is_aruco_detected:
+            frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
+            # frame_warp = post_process_image(frame_warp)
+            if self.output_video is not None:
+                self.output_video.write(frame_warp)
+            return True, frame_warp
+        elif self.M_inv is not None:
+            frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
+            if self.output_video is not None:
+                self.output_video.write(frame_warp)
+            # if enhance_image:
+            #     frame_warp = post_process_image(frame_warp)
+            return True, frame_warp
+        else:
+            return False, image
+        
+        
+    def _update_transform_matrices(self, gray):
         """Find aruco and update transformation matrices"""
         
         # detect aruco markers in gray frame
@@ -97,41 +129,3 @@ class PaperProcessor:
         self.M_inv, s = cv2.findHomography(these_res_corners, these_ref_corners, cv2.RANSAC, 10.0)
 
         return True
-
-
-    def transform_image(self, image, enhance_image=True):
-        """Transform image"""
-
-        # convert frame to gray scale
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # find new transform matrices
-        is_aruco_detected = self.update_transform_matrices(gray)
-
-        # draw detected markers in frame with their ids
-        if self.debug and is_aruco_detected:
-            draw_frame = image.copy()
-            cv2.aruco.drawDetectedMarkers(draw_frame, self.res_corners, self.res_ids)
-            cv2.namedWindow("Debug aruco", cv2.WINDOW_NORMAL)
-            cv2.imshow("Debug aruco",  draw_frame)
-            cv2.waitKey(1)
-        
-        # convert image using new transform matrices
-        if is_aruco_detected:
-            frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
-            # frame_warp = post_process_image(frame_warp)
-            if self.output_video is not None:
-                self.output_video.write(frame_warp)
-            return True, frame_warp
-        elif self.M_inv is not None:
-            frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
-            if self.output_video is not None:
-                self.output_video.write(frame_warp)
-            # if enhance_image:
-            #     frame_warp = post_process_image(frame_warp)
-            return True, frame_warp
-        else:
-            return False, image
-
-
-    

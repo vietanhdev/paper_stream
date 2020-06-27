@@ -6,13 +6,14 @@ from distutils import util
 import argparse
 import time
 import urllib 
-from libs.paper_processor import PaperProcessor
-from libs.pyfakewebcam import pyfakewebcam
+from libs.paper_processor.paper_processor import PaperProcessor
+from libs.webcam import pyfakewebcam
 from libs.color_filter import SkinColorFilter
 from libs.dominant_color import get_dominant_color_image
-from libs.utils import *
+from libs.utils.common import *
+from libs.config import *
 
-paper_processor = PaperProcessor(smooth=False, debug=True, output_video_path=None)
+paper_processor = PaperProcessor(REFERENCE_ARUCO_IMAGE_PATH, smooth=False, debug=True, output_video_path=None)
 
 output_width, output_height = paper_processor.get_output_size()
 camera = pyfakewebcam.FakeWebcam(get_camera_path("PaperStreamCam"), output_width, output_height)
