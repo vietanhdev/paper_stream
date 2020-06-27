@@ -4,7 +4,7 @@ from ..utils.common import *
 
 class PaperProcessor:
 
-    def __init__(self, ref_image_path, smooth=False, debug=False, output_video_path=None):
+    def __init__(self, ref_image_path, aruco_remove_mask_path=None, smooth=False, debug=False, output_video_path=None):
 
         self.smooth = smooth
         self.debug = debug
@@ -51,6 +51,11 @@ class PaperProcessor:
             self.output_video = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (self.ref_image.shape[1], self.ref_image.shape[0]))
         else:
             self.output_video = None
+            
+        if aruco_remove_mask_path:
+            self.aruco_remove_mask = cv2.imread(aruco_remove_mask_path, cv2.IMREAD_GRAYSCALE)
+        else:
+            self.aruco_remove_mask = None
         
     def get_output_size(self):
         return self.ref_image.shape[1], self.ref_image.shape[0]
@@ -75,16 +80,26 @@ class PaperProcessor:
         # convert image using new transform matrices
         if is_aruco_detected:
             frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
+            frame_warp = self._remove_aruco(frame_warp)
             if self.output_video is not None:
                 self.output_video.write(frame_warp)
             return True, frame_warp
         elif self.M_inv is not None:
             frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
+            frame_warp = self._remove_aruco(frame_warp)
             if self.output_video is not None:
                 self.output_video.write(frame_warp)
             return True, frame_warp
         else:
             return False, image
+        
+        
+    def _remove_aruco(self, image):
+        
+        if self.aruco_remove_mask is not None:
+            image[self.aruco_remove_mask > 0] = [255,255,255]
+            
+        return image
         
         
     def _update_transform_matrices(self, gray):

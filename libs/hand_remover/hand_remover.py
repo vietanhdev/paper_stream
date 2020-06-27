@@ -28,6 +28,10 @@ class HandRemover(object):
         
         background_area = np.where(hand_mask==0)
         self.background[background_area] = image[background_area]
+        
+        # self.background = self._enhance_image(self.background)
+        
+        # self.background[]
 
         return self.background
 
@@ -57,6 +61,7 @@ class HandRemover(object):
         m = m.astype(np.uint8)
 
         m = cv2.dilate(m, kernel, iterations=50)
+        # cv2.imshow('m', m)
         
         return m
         
