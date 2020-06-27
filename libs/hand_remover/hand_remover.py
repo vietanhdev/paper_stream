@@ -10,7 +10,6 @@ class DominantColor(object):
     def __init__(self, name='thread dominant color'):
         self.image = None 
         self.dominant_color = None
-        self.blank_paper = None
         self.stopped = False
 
         self.thread = Thread(target=self.update, name=name, args=())
@@ -20,9 +19,7 @@ class DominantColor(object):
         while not self.stopped:
             if self.image is None:
                 continue
-            self.dominant_color, self.blank_paper = self.__update_dominant_color(self.image)
-            # print(self.dominant_color)
-            # break
+            self.dominant_color = self.__update_dominant_color(self.image)
             time.sleep(60)
 
     def start(self):
@@ -37,11 +34,7 @@ class DominantColor(object):
     def get_color(self):
         return self.dominant_color
 
-    def get_blank_paper(self):
-        return self.blank_paper
-
     def __update_dominant_color(self, image, k=2):
-        blank_paper = np.zeros_like(image).astype(np.uint8)
         #reshape the image to be a list of pixels
         image = cv2.resize(image, (128, 128))
         image = image.reshape((image.shape[0] * image.shape[1], 3))
@@ -56,10 +49,8 @@ class DominantColor(object):
         #subset out most popular centroid
         dominant_color = clt.cluster_centers_[label_counts.most_common(1)[0][0]]
         dominant_color = list(dominant_color)
-
-        blank_paper[:] = dominant_color
         
-        return dominant_color, blank_paper
+        return dominant_color
 
 
 class HandRemover(object):
@@ -70,6 +61,8 @@ class HandRemover(object):
 
         self.lower_YCbCr_values = np.array((0, 138, 67), dtype = "uint8")
         self.upper_YCbCr_values = np.array((255, 173, 133), dtype = "uint8")
+
+        self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
 
         self.background = None
 
@@ -89,22 +82,26 @@ class HandRemover(object):
         
         background_area = np.where(hand_mask==0)
         self.background[background_area] = image[background_area]
-        
-        # self.background = self._enhance_image(self.background)
-        
-        # self.background[]
 
         self.background = self.__flood_fill(self.background.copy())
 
         return self.background
 
+    def __remove_noise_border(self, image):
+        h, w = image.shape[:2]
+        color = (255, 255, 255) 
+        thickness = 2
+        image = cv2.rectangle(image, (0, 0), (w, h), color, thickness)
+
+        return image  
+
+
     def __flood_fill(self, image):
-        test = image
-        test = cv2.Canny(test,250,300)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
-        test = cv2.dilate(test, kernel, iterations=3)
+        image = self.__remove_noise_border(image)
+        test = cv2.Canny(image, 200, 300)
+        test = cv2.dilate(test, self.kernel, iterations=5)
         
-        # Copy the thresholded image.
+        # Copy the thresholded image
         im_floodfill = test.copy()
 
         # Mask used to flood filling.
@@ -113,7 +110,7 @@ class HandRemover(object):
         mask = np.zeros((h+2, w+2), np.uint8)
 
         # Floodfill from point (0, 0)
-        cv2.floodFill(im_floodfill, mask, (0,int(w/2)), 255)
+        cv2.floodFill(im_floodfill, mask, (10,int(w/2)), 255)
 
         # Invert floodfilled image
         im_floodfill_inv = cv2.bitwise_not(im_floodfill)
@@ -122,9 +119,10 @@ class HandRemover(object):
         im_out = test | im_floodfill_inv
 
         image = cv2.bitwise_and(image, image, mask=im_out)
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
         color = self.dominant_color.get_color()
         if color is not None:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             image[im_out == 0] = color
             image[gray == 255] = color
 
@@ -136,15 +134,12 @@ class HandRemover(object):
 
         mask_YCbCr = cv2.inRange(YCbCr_image, self.lower_YCbCr_values, self.upper_YCbCr_values)
         mask_HSV = cv2.inRange(HSV_image, self.lower_HSV_values, self.upper_HSV_values)
-        
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3, 3))
 
         foreground_mask = cv2.add(mask_HSV, mask_YCbCr)
 
         # Morphological operations
-
         background_mask = ~foreground_mask
-        background_mask = cv2.erode(background_mask, kernel, iterations=50)
+        background_mask = cv2.erode(background_mask, self.kernel, iterations=50)
         background_mask[background_mask==255] = 128
 
         marker = cv2.add(foreground_mask, background_mask)
@@ -155,25 +150,6 @@ class HandRemover(object):
         m[m != 255] = 0
         m = m.astype(np.uint8)
 
-        m = cv2.dilate(m, kernel, iterations=50)
-        # cv2.imshow('m', m)
+        m = cv2.dilate(m, self.kernel, iterations=40)
         
         return m
-        
-    def __enhance_image(self, image):
-        rgb_planes = cv2.split(image)
-
-        result_planes = []
-        result_norm_planes = []
-        for plane in rgb_planes:
-            dilated_img = cv2.dilate(plane, np.ones((7,7), np.uint8))
-            bg_img = cv2.medianBlur(dilated_img, 21)
-            diff_img = 255 - cv2.absdiff(plane, bg_img)
-            norm_img = cv2.normalize(diff_img,None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-            result_planes.append(diff_img)
-            result_norm_planes.append(norm_img)
-
-        result = cv2.merge(result_planes)
-        result_norm = cv2.merge(result_norm_planes)
-        
-        return result_norm
