@@ -3,7 +3,6 @@ from collections import Counter
 import cv2
 import numpy as np
 from threading import Thread, Lock
-from skimage.filters import threshold_local
 import time
 
 class DominantColor(object):
@@ -122,13 +121,14 @@ class HandRemover(object):
         # Combine the two images to get the foreground.
         im_out = test | im_floodfill_inv
 
-        test2 = image
-        test2 = cv2.bitwise_and(test2, test2, mask=im_out)
+        image = cv2.bitwise_and(image, image, mask=im_out)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         color = self.dominant_color.get_color()
         if color is not None:
-            test2[test2[..., 0]==0] = color
+            image[im_out == 0] = color
+            image[gray == 255] = color
 
-        return test2
+        return image
 
     def __get_hand_mask(self, image):
         HSV_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
