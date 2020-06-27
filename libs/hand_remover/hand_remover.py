@@ -151,5 +151,7 @@ class HandRemover(object):
         m = m.astype(np.uint8)
 
         m = cv2.dilate(m, self.kernel, iterations=40)
+
+        # cv2.imshow('m', m)
         
         return m

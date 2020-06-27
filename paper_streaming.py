@@ -24,11 +24,11 @@ if OUTPUT_SIMULATED_CAMERA:
     output_width, output_height = paper_processor.get_output_size()
     camera = pyfakewebcam.FakeWebcam(get_camera_path("PaperStreamCam"), output_width, output_height)
 
-cap = cv2.VideoCapture("/media/syan/163EAD8F3EAD6887/HACKATHON2020/output.avi")
+cap = cv2.VideoCapture("http://192.168.43.1:8080/video")
 while(True):
     
     ret, frame = cap.read()
-    if ret is False:
+    if ret == False:
         break
     if frame is not None:
         
