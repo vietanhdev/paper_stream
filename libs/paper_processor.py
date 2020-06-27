@@ -119,7 +119,7 @@ class PaperProcessor:
         # convert image using new transform matrices
         if is_aruco_detected:
             frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
-            frame_warp = post_process_image(frame_warp)
+            # frame_warp = post_process_image(frame_warp)
             if self.output_video is not None:
                 self.output_video.write(frame_warp)
             return True, frame_warp
@@ -127,7 +127,8 @@ class PaperProcessor:
             frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
             if self.output_video is not None:
                 self.output_video.write(frame_warp)
-            frame_warp = post_process_image(frame_warp)
+            # if enhance_image:
+            #     frame_warp = post_process_image(frame_warp)
             return True, frame_warp
         else:
             return False, image
