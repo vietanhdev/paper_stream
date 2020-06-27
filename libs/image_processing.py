@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
+from .hand_filter import *
+from .stroke_filter import *
 
-
-def enhance_image(bgr):
+def post_process_image(bgr):
 
     gridsize = 11
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
@@ -19,8 +20,6 @@ def enhance_image(bgr):
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
     bgr[gray > 160] = [255, 255, 255]
     # bgr[gray < 160] = [0, 0, 0]
-
-    # bgr = color_filter.run(bgr)
 
     bgr = cv2.morphologyEx(bgr, cv2.MORPH_CLOSE, np.ones((1, 1), dtype=np.uint8))
 

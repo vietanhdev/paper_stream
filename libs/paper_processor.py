@@ -1,22 +1,21 @@
 import cv2
 import numpy as np
 
-from .hand_filter import *
-from .stroke_filter import *
-from .utils import *
 from .image_processing import *
+from .utils import *
 from .config import *
 
 class PaperProcessor:
 
-    def __init__(self, smooth=False, debug=False):
+    def __init__(self, smooth=False, debug=False, output_video_path=None):
 
         self.smooth = smooth
         self.debug = debug
-
+        self.output_video_path = output_video_path
         # transform matrices
         self.M = None
         self.M_inv = None
+        self.h_array = []
 
         # define an empty custom dictionary with 
         aruco_dict = cv2.aruco.custom_dictionary(0, 4, 1)
@@ -50,9 +49,17 @@ class PaperProcessor:
                         [self.ref_image.shape[1],0],
                         [self.ref_image.shape[1], self.ref_image.shape[0]],
                         [0,self.ref_image.shape[0]]]], dtype = "float32")
-
+        
+        if self.output_video_path:
+            self.output_video = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (self.ref_image.shape[1], self.ref_image.shape[0]))
+        else:
+            self.output_video = None
+        
+    def get_output_size(self):
+        return self.ref_image.shape[1], self.ref_image.shape[0]
 
     def update_transform_matrices(self, gray):
+        """Find aruco and update transformation matrices"""
         
         # detect aruco markers in gray frame
         res_corners, res_ids, _ = cv2.aruco.detectMarkers(gray, self.aruco_dict, parameters = self.parameters)
@@ -73,12 +80,14 @@ class PaperProcessor:
         # flatten the array of corners in the frame and reference image
         these_res_corners = np.concatenate(res_corners, axis = 1)
         these_ref_corners = np.concatenate([self.ref_corners[x] for x in idx], axis = 1)
+
         # estimate homography matrix
         h, s = cv2.findHomography(these_ref_corners, these_res_corners, cv2.RANSAC, 10.0)
+
         # if we want smoothing
         if self.smooth:
-            h_array.append(h)
-            self.M = np.mean(h_array, axis = 0)
+            self.h_array.append(h)
+            self.M = np.mean(self.h_array, axis = 0)
         else:
             self.M = h
 
@@ -90,7 +99,8 @@ class PaperProcessor:
         return True
 
 
-    def transform_image(self, image):
+    def transform_image(self, image, enhance_image=True):
+        """Transform image"""
 
         # convert frame to gray scale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -109,11 +119,15 @@ class PaperProcessor:
         # convert image using new transform matrices
         if is_aruco_detected:
             frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
-            frame_warp = enhance_image(frame_warp)
+            frame_warp = post_process_image(frame_warp)
+            if self.output_video is not None:
+                self.output_video.write(frame_warp)
             return True, frame_warp
         elif self.M_inv is not None:
             frame_warp = cv2.warpPerspective(image, self.M_inv, (self.ref_image.shape[1], self.ref_image.shape[0]))
-            frame_warp = enhance_image(frame_warp)
+            if self.output_video is not None:
+                self.output_video.write(frame_warp)
+            frame_warp = post_process_image(frame_warp)
             return True, frame_warp
         else:
             return False, image
