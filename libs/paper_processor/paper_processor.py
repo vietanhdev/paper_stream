@@ -1,15 +1,18 @@
 import cv2
 import numpy as np
+import time
 from ..utils.common import *
 
 class PaperProcessor:
 
     def __init__(self, ref_image_path, aruco_remove_mask_path=None, smooth=False, debug=False, output_video_path=None):
-
+        
         self.smooth = smooth
         self.debug = debug
         self.output_video_path = output_video_path
+        
         # transform matrices
+        self.last_M_update = time.time()
         self.M = None
         self.M_inv = None
         self.h_array = []
@@ -67,7 +70,10 @@ class PaperProcessor:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # find new transform matrices
-        is_aruco_detected = self._update_transform_matrices(gray)
+        is_aruco_detected = True
+        if time.time() - self.last_M_update > 2 or self.M is None:
+            is_aruco_detected = self._update_transform_matrices(gray)
+            self.last_M_update = time.time()
 
         # draw detected markers in frame with their ids
         if self.debug and is_aruco_detected:

@@ -98,7 +98,7 @@ class HandRemover(object):
 
     def __flood_fill(self, image):
         image = self.__remove_noise_border(image)
-        test = cv2.Canny(image, 200, 300)
+        test = cv2.Canny(image, 150, 200)
         test = cv2.dilate(test, self.kernel, iterations=5)
         
         # Copy the thresholded image

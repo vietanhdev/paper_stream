@@ -10,11 +10,11 @@ class StrokeFilter:
         self.prev_connected_components = None
     
     def process(self, image):
-        # image = self._pre_processing(image)
+        # image = self._post_processing(image)
         # image = self._get_stroke_mask(image)
         return image
     
-    def _pre_processing(self, bgr):
+    def _post_processing(self, bgr):
 
         gridsize = 11
         lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
@@ -33,11 +33,16 @@ class StrokeFilter:
         
         mask = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
         mask[:,:] = 0
-        mask[gray < 160] = 255
+        mask[gray < 160] = 0
 
         bgr = cv2.morphologyEx(bgr, cv2.MORPH_CLOSE, np.ones((1, 1), dtype=np.uint8))
+        
+        # bgr[gray < 160] = [10, 10, 10]
+        
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
+        # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
-        return mask
+        return bgr
     
     
     def _get_label_mask(self, labels, ids):
