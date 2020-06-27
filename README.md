@@ -14,7 +14,7 @@ apt-get install python-opencv # 10x performance improvement if installed (see be
 apt-get install ffmpeg # useful for debugging
 
 # Insert the v4l2loopback kernel module.
-modprobe v4l2loopback devices=2 # will create two fake webcam devices
+sudo modprobe v4l2loopback devices=2 exclusive_caps=1 video_nr=3 card_label="PaperStreamCam" # will create two fake webcam devices
 ```
 
 - Fix v4l

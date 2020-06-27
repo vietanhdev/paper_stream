@@ -10,11 +10,8 @@ from libs.paper_processor import PaperProcessor
 from libs.pyfakewebcam import pyfakewebcam
 
 paper_processor = PaperProcessor(smooth=False, debug=True, output_video_path=None)
-
 output_width, output_height = paper_processor.get_output_size()
-print(output_width, output_height)
-# camera = pyfakewebcam.FakeWebcam('/dev/video1', output_width, output_height)
-# camera = pyfakewebcam.FakeWebcam('/dev/video1', 1920, 1080)
+camera = pyfakewebcam.FakeWebcam('/dev/video3', output_width, output_height)
 
 # load video file
 cap = cv2.VideoCapture("http://192.168.43.1:8080/video")
@@ -26,8 +23,9 @@ while(True):
 
         ret, warped_image = paper_processor.transform_image(frame, enhance_image=True)
         
-        # if ret:
-        #     camera.schedule_frame(warped_image)
+        if ret:
+            warped_image_rgb = cv2.cvtColor(warped_image, cv2.COLOR_BGR2RGB)
+            camera.schedule_frame(warped_image_rgb)
         
         cv2.namedWindow("Debug", cv2.WINDOW_NORMAL)
         cv2.imshow("Debug",  warped_image)

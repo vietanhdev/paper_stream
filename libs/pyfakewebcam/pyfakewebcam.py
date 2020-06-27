@@ -89,19 +89,10 @@ class FakeWebcam:
             # sys.stderr.write('conversion time: {}\n'.format(t2-t1))                    
             
         # t1 = timeit.default_timer()
-        # print(self._buffer.shape)
-        # print(self._yuv.shape)
-        # print("------")
         for i in range(self._settings.fmt.pix.height):
-            
-            # print(self._buffer[i,3::4].shape)
-            # print(self._yuv[i,::2,2].shape)
-            # print("------")
-            
             self._buffer[i,::2] = self._yuv[i,:,0]
             self._buffer[i,1::4] = self._yuv[i,::2,1]
-            min_shape = min(self._buffer[i,3::4].shape[0], self._yuv[i,::2,2].shape[0])
-            self._buffer[i,3::4][:min_shape] = self._yuv[i,::2,2][:min_shape]
+            self._buffer[i,3::4] = self._yuv[i,::2,2]
 
         # t2 = timeit.default_timer()
         # sys.stderr.write('pack time: {}\n'.format(t2-t1))
