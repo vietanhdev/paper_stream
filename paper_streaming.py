@@ -7,51 +7,48 @@ import argparse
 import time
 import urllib 
 from libs.paper_processor.paper_processor import PaperProcessor
+from libs.hand_remover.hand_remover import HandRemover
+from libs.stroke_filter.stroke_filter import StrokeFilter
 from libs.webcam import pyfakewebcam
-from libs.color_filter import SkinColorFilter
-from libs.dominant_color import get_dominant_color_image
 from libs.utils.common import *
 from libs.config import *
 
-paper_processor = PaperProcessor(REFERENCE_ARUCO_IMAGE_PATH, smooth=False, debug=True, output_video_path=None)
+OUTPUT_SIMULATED_CAMERA = True
 
+paper_processor = PaperProcessor(REFERENCE_ARUCO_IMAGE_PATH, smooth=False, debug=True, output_video_path=None)
+hand_remover = HandRemover()
+stroke_filter = StrokeFilter()
+
+# create output video stream
 output_width, output_height = paper_processor.get_output_size()
 camera = pyfakewebcam.FakeWebcam(get_camera_path("PaperStreamCam"), output_width, output_height)
 
 cap = cv2.VideoCapture("http://192.168.43.1:8080/video")
 
 dominant_color = None
-
 while(True):
-    # read next frame from VideoCapture
+    
     ret, frame = cap.read()
     if frame is not None:
-        ret, warped_image = paper_processor.transform_image(frame, enhance_image=False)
-
-        if dominant_color is None:
-            color_filter = SkinColorFilter(warped_image)
-            dominant_color_image, dominant_color = get_dominant_color_image(warped_image)
-
-        background = color_filter.run(warped_image)
-
-        gray_dominant_color_image = cv2.cvtColor(dominant_color_image, cv2.COLOR_BGR2GRAY)
-        gray_background = cv2.cvtColor(background, cv2.COLOR_BGR2GRAY)
-        diff = np.abs(gray_dominant_color_image.astype(np.int8) - gray_background.astype(np.int8))
-        m = diff < 50
-        # background[m] = 255
-        warped_image = background
         
+        # get paper image
+        is_cropped, processed_image = paper_processor.get_paper_image(frame)
         
-        # if ret:
-        #     warped_image_rgb = cv2.cvtColor(warped_image, cv2.COLOR_BGR2RGB)
-        #     camera.schedule_frame(warped_image_rgb)
+        # remove hand
+        processed_image = hand_remover.process(processed_image, is_cropped=is_cropped)
+        
+        # post processing 
+        processed_image = stroke_filter.process(processed_image)
+            
+        if OUTPUT_SIMULATED_CAMERA:
+            if is_cropped:
+                camera_frame = cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB)
+                camera.schedule_frame(camera_frame)
         
         cv2.namedWindow("Debug", cv2.WINDOW_NORMAL)
-        cv2.imshow("Debug",  background)
-        
-    # exit if q is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        cv2.imshow("Debug",  processed_image)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 cap.release()
 cv2.destroyAllWindows()
