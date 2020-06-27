@@ -15,7 +15,7 @@ from libs.config import *
 
 OUTPUT_SIMULATED_CAMERA = False
 
-paper_processor = PaperProcessor(REFERENCE_ARUCO_IMAGE_PATH, smooth=False, debug=True, output_video_path=None)
+paper_processor = PaperProcessor(REFERENCE_ARUCO_IMAGE_PATH, smooth=False, debug=False, output_video_path=None)
 hand_remover = HandRemover()
 stroke_filter = StrokeFilter()
 
@@ -45,7 +45,8 @@ while(True):
                 camera.schedule_frame(camera_frame)
         
         cv2.namedWindow("Debug", cv2.WINDOW_NORMAL)
-        cv2.imshow("Debug",  processed_image)
+        cv2.imshow("Debug",  frame)
+        cv2.imshow("Result",  processed_image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
