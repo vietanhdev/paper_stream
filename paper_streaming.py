@@ -20,12 +20,11 @@ hand_remover = HandRemover()
 stroke_filter = StrokeFilter()
 
 # create output video stream
-output_width, output_height = paper_processor.get_output_size()
-camera = pyfakewebcam.FakeWebcam(get_camera_path("PaperStreamCam"), output_width, output_height)
+if OUTPUT_SIMULATED_CAMERA:
+    output_width, output_height = paper_processor.get_output_size()
+    camera = pyfakewebcam.FakeWebcam(get_camera_path("PaperStreamCam"), output_width, output_height)
 
 cap = cv2.VideoCapture("http://192.168.43.1:8080/video")
-
-dominant_color = None
 while(True):
     
     ret, frame = cap.read()
