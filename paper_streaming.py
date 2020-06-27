@@ -37,8 +37,8 @@ while(True):
         gray_background = cv2.cvtColor(background, cv2.COLOR_BGR2GRAY)
         diff = np.abs(gray_dominant_color_image.astype(np.int8) - gray_background.astype(np.int8))
         m = diff<30
-        background[m] = 255
-        # warped_image = background
+        # background[m] = 255
+        warped_image = background
         
         # if ret:
         #     warped_image_rgb = cv2.cvtColor(warped_image, cv2.COLOR_BGR2RGB)
