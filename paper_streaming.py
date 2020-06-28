@@ -9,6 +9,7 @@ from threading import Lock
 import cv2
 import numpy as np
 from PyQt5 import QtWidgets, uic
+from PyQt5 import QtCore, QtGui
 
 import _thread
 from libs.config import *
@@ -19,7 +20,7 @@ from libs.utils.common import *
 from libs.utils.ui_utils import *
 from libs.webcam import pyfakewebcam
 
-OUTPUT_SIMULATED_CAMERA = False
+OUTPUT_SIMULATED_CAMERA = True
 
 paper_processor = PaperProcessor(REFERENCE_ARUCO_IMAGE_PATH, aruco_remove_mask_path=REFERENCE_ARUCO_REMOVE_IMAGE_PATH, smooth=True, debug=False, output_video_path=None)
 hand_remover = HandRemover()
@@ -38,6 +39,7 @@ new_camera_url = None
 def camera_reading_thread():
     global frame, frame_mutex, new_camera_url
     cap = cv2.VideoCapture(DEFAULT_WEBCAM_URL)
+    status_label = ""
     while(True):
         
         if new_camera_url is not None:
@@ -53,10 +55,14 @@ def camera_reading_thread():
         ret, frame = cap.read()
         frame_mutex.release()
 
+        new_status_label = "Camera status: Disconnected"
         if ret:
-            window.cameraStatusLabel.setText("Camera status: Connected")
-        else:
-            window.cameraStatusLabel.setText("Camera status: Disconnected")
+            new_status_label = "Camera status: Connected"
+        if new_status_label != status_label:
+            status_label = new_status_label
+            window.cameraStatusLabel.setText(status_label)
+            
+            
         time.sleep(0.05)
 
 # processing thread    
@@ -99,10 +105,11 @@ def connect_clicked():
     global new_camera_url
     new_camera_url = window.cameraUrlInput.toPlainText()
 
+
 # setup app
 app = QtWidgets.QApplication(sys.argv)
 window = uic.loadUi("libs/main_window.ui")
-window.setWindowTitle("PaperStream app")
+window.setWindowTitle("PaperStream")
 window.newRoomBtn.clicked.connect(new_room_clicked)
 window.joinRoomBtn.clicked.connect(join_room_clicked)
 window.connectBtn.clicked.connect(connect_clicked)
