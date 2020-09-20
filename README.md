@@ -1,5 +1,7 @@
 # PaperStream - Online Paper Streaming for remote education
 
+Blog post: <https://aicurious.io/posts/xay-dung-giai-phap-stream-giay-viet-IBM-Hackathon-2020/>.
+
 This project is the source code for [IBM Hackathon at SoICT](https://www.facebook.com/events/733476740727552/). My team got **Second Place**. Note that our solution has 2 parts: (1) paper transformation and (2) video conference website. This repository only contains the first part. In the second part, we build a streaming website using Flask + ReactJS with video streaming solution from <https://vidyo.io/>.
 
 Currently we don't have time for this project. However, we will add more info later.
